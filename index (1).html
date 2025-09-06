@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>For Ali — A Little Love Note</title>
+  <meta name="description" content="A sweet clickable heart that opens a paper love note, with floating hearts and soft aesthetics." />
+  <style>
+    /* Reset & base */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(1200px 800px at 70% -20%, #ffd2dc 0%, rgba(255,210,220,0) 60%),
+        radial-gradient(1000px 1000px at -20% 120%, #e9d7ff 0%, rgba(233,215,255,0) 55%),
+        linear-gradient(135deg, #ffdde1, #e0c3fc);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      overflow: hidden;
+      color: #4a1d2a;
+    }
+
+    /* Floating background hearts */
+    .floaters {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .floater {
+      position: absolute;
+      font-size: clamp(16px, 2.5vw, 32px);
+      opacity: .25;
+      animation: drift linear infinite;
+      will-change: transform, opacity;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,.15));
+    }
+    @keyframes drift {
+      0%   { transform: translateY(100vh) translateX(0) rotate(0deg); opacity: .12; }
+      60%  { opacity: .35; }
+      100% { transform: translateY(-15vh)  translateX(30px) rotate(18deg); opacity: .18; }
+    }
+
+    /* Content wrapper */
+    .wrap {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      gap: 14px;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: clamp(18px, 3.8vw, 26px);
+      letter-spacing: .2px;
+      opacity: .85;
+    }
+    .subtitle {
+      font-size: clamp(13px, 2.6vw, 16px);
+      opacity: .75;
+    }
+
+    /* Heart button */
+    .heart-btn {
+      --size: clamp(120px, 28vmin, 220px);
+      width: var(--size);
+      height: var(--size);
+      border-radius: 50%;
+      border: none;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      background: radial-gradient(circle at 35% 35%, #ff9bb3 0%, #ff5d86 40%, #ff3369 70%, #c51847 100%);
+      box-shadow:
+        0 18px 35px rgba(197, 24, 71, .35),
+        inset 0 -10px 18px rgba(0,0,0,.18),
+        inset 0 10px 18px rgba(255,255,255,.25);
+      transition: transform .15s ease, filter .2s ease;
+      position: relative;
+      isolation: isolate;
+    }
+    .heart-btn:active { transform: scale(.98); }
+    .heart-btn:hover { filter: brightness(1.05); }
+
+    /* Glare */
+    .heart-btn::before {
+      content: "";
+      position: absolute;
+      inset: 6%;
+      border-radius: 50%;
+      background: radial-gradient(110% 80% at 25% 22%, rgba(255,255,255,.9) 0%, rgba(255,255,255,.35) 35%, rgba(255,255,255,0) 60%);
+      mix-blend-mode: screen;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Actual heart glyph */
+    .heart-glyph {
+      font-size: clamp(54px, 10vmin, 96px);
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,.25));
+      animation: thump 1.4s ease-in-out infinite;
+      z-index: 3;
+    }
+    @keyframes thump {
+      0%, 100% { transform: scale(1); }
+      14%      { transform: scale(1.12); }
+      28%      { transform: scale(1); }
+      42%      { transform: scale(1.08); }
+      70%      { transform: scale(1); }
+    }
+
+    /* Modal backdrop */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(22, 12, 20, 0.55);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity .25s ease, visibility .25s step-end;
+      z-index: 10;
+    }
+    .backdrop[aria-hidden="false"] {
+      visibility: visible;
+      opacity: 1;
+      transition: opacity .25s ease, visibility 0s;
+    }
+
+    /* Paper note */
+    .note {
+      width: min(760px, 92vw);
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          #fffdf8 0 28px,
+          #ffe7ef 28px 29px
+        );
+      border-radius: 18px;
+      box-shadow:
+        0 24px 60px rgba(0,0,0,.35),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+      transform: translateY(10px) scale(.98);
+      opacity: 0;
+      transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .35s ease;
+      position: relative;
+      padding: clamp(18px, 3.5vw, 32px) clamp(18px, 4.5vw, 40px);
+    }
+    .backdrop[aria-hidden="false"] .note {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    /* Tape + header */
+    .tape {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      width: 120px;
+      height: 30px;
+      background: #ffe4f1;
+      box-shadow: 0 4px 10px rgba(0,0,0,.12);
+      border-radius: 6px;
+      opacity: .85;
+    }
+
+    .note h2 {
+      margin: 6px 0 10px;
+      font-size: clamp(20px, 4.2vw, 28px);
+      color: #a51747;
+      letter-spacing: .3px;
+      text-align: center;
+    }
+
+    .message {
+      font-size: clamp(16px, 3.6vw, 20px);
+      line-height: 1.8;
+      white-space: pre-wrap;
+      text-wrap: pretty;
+    }
+
+    /* Footer actions */
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 14px;
+      background: #ff7aa2;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(255, 122, 162, .35);
+      transition: transform .15s ease, filter .2s ease;
+    }
+    .btn:hover { filter: brightness(1.06); }
+    .btn:active { transform: translateY(1px) scale(.99); }
+
+    /* Close X */
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: transparent;
+      border: 0;
+      font-size: 26px;
+      line-height: 1;
+      cursor: pointer;
+      color: #ad4466;
+      opacity: .85;
+    }
+    .close:hover { opacity: 1; }
+
+    /* Accessibility helpers (prefers-reduced-motion) */
+    @media (prefers-reduced-motion: reduce) {
+      .heart-glyph { animation: none; }
+      .floater { animation-duration: 16s; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Floating ambience hearts (filled via JS for randomness) -->
+  <div class="floaters" aria-hidden="true" id="floaters"></div>
+
+  <main class="wrap">
+    <h1 class="title">Tap the heart for a surprise</h1>
+    <p class="subtitle">A little note for Ali ✨</p>
+
+    <button class="heart-btn" id="openNote" aria-haspopup="dialog" aria-expanded="false">
+      <span class="heart-glyph" aria-hidden="true">💖</span>
+      <span class="sr-only">Open love note</span>
+    </button>
+  </main>
+
+  <!-- Modal / dialog -->
+  <div class="backdrop" id="backdrop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="noteTitle">
+    <div class="note">
+      <div class="tape" aria-hidden="true"></div>
+      <button class="close" id="closeNote" aria-label="Close">×</button>
+      <h2 id="noteTitle">A Note From the Heart</h2>
+      <div class="message" id="noteText">I love you Ali, Have a nice day. Did you know that you are the most beautiful woman in the entire world? &lt;333, You are my one and we accept the love we think we deserve, you are my most precious treassure to me and 1 in a billion people to be find. You are amazing my love.
+
+Sika lang, Ikaw lang, just you, Sólo tú, あなただけ, 너만, 只有你, my only one.
+
+I love you so much Ali &lt;33</div>
+
+      <div class="actions">
+        <button class="btn" id="copyBtn">Copy message</button>
+        <button class="btn" id="closeBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Random floating hearts generator
+    (function makeFloaters() {
+      const container = document.getElementById('floaters');
+      const emojis = ['❤️','💖','💗','💕','💘','🩷'];
+      const count = 28; // number of floating hearts
+      for (let i = 0; i < count; i++) {
+        const span = document.createElement('span');
+        span.className = 'floater';
+        span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        const left = Math.random() * 100;
+        const delay = Math.random() * 8;         // seconds
+        const duration = 10 + Math.random() * 14; // seconds
+        const blur = Math.random() * 1.5;
+        span.style.left = left + 'vw';
+        span.style.animationDelay = delay + 's';
+        span.style.animationDuration = duration + 's';
+        span.style.filter = `blur(${blur}px) drop-shadow(0 2px 6px rgba(0,0,0,.12))`;
+        container.appendChild(span);
+      }
+    })();
+
+    // Modal logic
+    const openBtn = document.getElementById('openNote');
+    const closeX = document.getElementById('closeNote');
+    const closeBtn = document.getElementById('closeBtn');
+    const backdrop = document.getElementById('backdrop');
+    const copyBtn = document.getElementById('copyBtn');
+    const noteText = document.getElementById('noteText');
+
+    function openModal() {
+      backdrop.setAttribute('aria-hidden', 'false');
+      openBtn.setAttribute('aria-expanded', 'true');
+      // Focus trap basic: move focus to close button
+      setTimeout(() => closeX.focus(), 0);
+    }
+    function closeModal() {
+      backdrop.setAttribute('aria-hidden', 'true');
+      openBtn.setAttribute('aria-expanded', 'false');
+      openBtn.focus();
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeX.addEventListener('click', closeModal);
+    closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // Copy to clipboard
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(noteText.innerText);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => (copyBtn.textContent = 'Copy message'), 1500);
+      } catch {
+        copyBtn.textContent = 'Press Ctrl+C';
+        setTimeout(() => (copyBtn.textContent = 'Copy message'), 1500);
+      }
+    });
+  </script>
+</body>
+</html>
